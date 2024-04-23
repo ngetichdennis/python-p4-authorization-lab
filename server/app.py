@@ -87,12 +87,31 @@ class CheckSession(Resource):
 class MemberOnlyIndex(Resource):
     
     def get(self):
-        pass
+        if not session['user_id']:
+            return{'error':'Unauthorized'},401
+        articles = [article.to_dict() for article in Article.query.all()]
+        return make_response(jsonify(articles), 200)
 
 class MemberOnlyArticle(Resource):
     
     def get(self, id):
-        pass
+        if not session['user_id']:
+            return{'error':'Unauthorized'},401
+        article = Article.query.filter(Article.id == id).first()
+        article_json = article.to_dict()
+        return make_response(jsonify(article_json), 200)
+    
+class MemberOnlyArticles(Resource):
+    def get(self):
+        user_id = session.get('user_id')
+        if user_id:
+            articles = Article.query.filter_by(is_member_only=True).all()
+            return [article.to_dict() for article in articles], 200
+        else:
+            return {'message': 'Unauthorized access. Please login.'}, 401
+
+api.add_resource(MemberOnlyArticles, '/members_only_articles')
+
 
 api.add_resource(ClearSession, '/clear', endpoint='clear')
 api.add_resource(IndexArticle, '/articles', endpoint='article_list')
@@ -102,6 +121,8 @@ api.add_resource(Logout, '/logout', endpoint='logout')
 api.add_resource(CheckSession, '/check_session', endpoint='check_session')
 api.add_resource(MemberOnlyIndex, '/members_only_articles', endpoint='member_index')
 api.add_resource(MemberOnlyArticle, '/members_only_articles/<int:id>', endpoint='member_article')
+# api.add_resource(MemberOnlyArticle, '/members_only_articles')
+
 
 
 if __name__ == '__main__':
